@@ -32,12 +32,12 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
-  // Les écrans correspondant à ta maquette
+ 
   final List<Widget> _screens = [
-    const HomePage(), // Icône Accueil
-    const Center(child: Text("Mon Panier")), // Icône Produits
-    const FavoritesPage(), // Icône Favoris
-    const Center(child: Text("Profil")), // Icône Profile
+    const HomePage(), 
+    const Center(child: Text("Mon Panier")), 
+    const FavoritesPage(), 
+    const Center(child: Text("Profil")), 
   ];
 
   @override
@@ -45,20 +45,20 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
-        // Cette décoration crée la bordure orange du haut comme sur la maquette
+        
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: blokOrange, width: 2.0), // Bordure orange
+            top: BorderSide(color: blokOrange, width: 2.0), 
           ),
         ),
         child: BottomNavigationBar(
-          backgroundColor: blokBlue, // Fond bleu marine
+          backgroundColor: blokBlue, 
           currentIndex: _currentIndex,
           type: BottomNavigationBarType.fixed,
           selectedItemColor:
-              blokOrange, // Texte et icône sélectionnés en orange
+              blokOrange, 
           unselectedItemColor:
-              Colors.white, // Icônes non sélectionnées en blanc
+              Colors.white, 
           selectedFontSize: 12,
           unselectedFontSize: 12,
           showSelectedLabels: true,
@@ -71,7 +71,7 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.shopping_basket_outlined),
-              label: 'pannier', // Orthographe exacte de la maquette
+              label: 'pannier', 
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite),

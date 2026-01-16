@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
+import '../utils/data_manager.dart';
 
-class DetailsPage extends StatelessWidget {
+class DetailsPage extends StatefulWidget {
   final String productName;
   final String productPrice;
   final String productImage;
@@ -16,7 +17,34 @@ class DetailsPage extends StatelessWidget {
   });
 
   @override
+  State<DetailsPage> createState() => _DetailsPageState();
+}
+
+class _DetailsPageState extends State<DetailsPage> {
+  
+  // Fonction pour basculer l'état de favori
+  void toggleFavorite() {
+    setState(() {
+      int index = favoriteProducts.indexWhere((p) => p['name'] == widget.productName);
+
+      if (index != -1) {
+        favoriteProducts.removeAt(index);
+      } else {
+        favoriteProducts.add({
+          'name': widget.productName,
+          'category': widget.productCategory,
+          'price': widget.productPrice,
+          'image': widget.productImage,
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // On vérifie si le produit actuel est dans la liste globale des favoris
+    bool isFavorite = favoriteProducts.any((p) => p['name'] == widget.productName);
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -58,9 +86,9 @@ class DetailsPage extends StatelessWidget {
                     // --- IMAGE PRODUIT ---
                     Center(
                       child: Image.asset(
-                        productImage,
+                        widget.productImage, // Utilisation de widget. pour accéder aux propriétés
                         height: 350,
-                        fit: BoxFit.contain, // Pour voir tout le sac comme sur la maquette
+                        fit: BoxFit.contain, 
                       ),
                     ),
 
@@ -77,7 +105,7 @@ class DetailsPage extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  productName.toUpperCase(),
+                                  widget.productName.toUpperCase(),
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w900,
@@ -85,14 +113,21 @@ class DetailsPage extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              // BOUTON FAVORIS CIRCULAIRE
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF2F2F2),
-                                  shape: BoxShape.circle,
+                              // BOUTON FAVORIS INTERACTIF
+                              GestureDetector(
+                                onTap: toggleFavorite,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF2F2F2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.favorite, 
+                                    color: isFavorite ? blokOrange : Colors.grey.shade400, 
+                                    size: 22
+                                  ),
                                 ),
-                                child: const Icon(Icons.favorite, color: blokOrange, size: 22),
                               ),
                             ],
                           ),
@@ -105,12 +140,12 @@ class DetailsPage extends StatelessWidget {
                               borderRadius: BorderRadius.circular(15),
                             ),
                             child: Text(
-                              productCategory,
+                              widget.productCategory,
                               style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(height: 30),
-                          // DESCRIPTION PLACEHOLDER
+                          // DESCRIPTION
                           Center(
                             child: Column(
                               children: [
@@ -144,11 +179,11 @@ class DetailsPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    productPrice,
+                    widget.productPrice,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1D264F), // Bleu très foncé de la maquette
+                      color: Color(0xFF1D264F), 
                     ),
                   ),
                   ElevatedButton(
