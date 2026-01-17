@@ -1,7 +1,7 @@
-// lib/models/product.dart
+
 
 class Product {
-  final int? id; // L'ID sera généré automatiquement par la base de données
+  final String? id; 
   final String name;
   final int quantity;
   final double price;

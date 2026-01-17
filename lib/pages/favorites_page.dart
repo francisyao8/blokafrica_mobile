@@ -12,11 +12,36 @@ class FavoritesPage extends StatefulWidget {
 
 class _FavoritesPageState extends State<FavoritesPage> {
   
-  // Fonction pour supprimer un produit et mettre à jour l'écran
+  // --- FONCTION DE TOAST PERSONNALISÉE ---
+  void _showNotification(String message) {
+    
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: Colors.black.withOpacity(0.5), 
+        duration: const Duration(seconds: 3), 
+        behavior: SnackBarBehavior.floating, 
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
+      ),
+    );
+  }
+
+  // Fonction pour supprimer un produit
   void removeFromFavorites(String name) {
     setState(() {
       favoriteProducts.removeWhere((p) => p['name'] == name);
     });
+    
+    // Appel du toast personnalisé
+    _showNotification("Produit retiré des favoris");
   }
 
   @override
@@ -28,8 +53,12 @@ class _FavoritesPageState extends State<FavoritesPage> {
         elevation: 0,
         toolbarHeight: 80,
         title: const Text(
-          "Favoris", 
-          style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)
+          "Favoris",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           _buildAppBarIcon(Icons.settings),
@@ -44,37 +73,49 @@ class _FavoritesPageState extends State<FavoritesPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Mes favoris", 
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
+              "Mes favoris",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: favoriteProducts.isEmpty 
-                ? const Center(
-                    child: Text(
-                      "Aucun favori pour le moment",
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+              child: favoriteProducts.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.favorite_border,
+                            color: Colors.grey,
+                            size: 60,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            "Aucun favori pour le moment",
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      itemCount: favoriteProducts.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 15,
+                            mainAxisSpacing: 15,
+                            childAspectRatio: 0.72,
+                          ),
+                      itemBuilder: (context, index) {
+                        final p = favoriteProducts[index];
+                        return _buildFavoriteCard(
+                          context,
+                          p['name']!,
+                          p['category']!,
+                          p['price']!,
+                          p['image']!,
+                        );
+                      },
                     ),
-                  )
-                : GridView.builder(
-                    itemCount: favoriteProducts.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                      childAspectRatio: 0.72,
-                    ),
-                    itemBuilder: (context, index) {
-                      final p = favoriteProducts[index];
-                      return _buildFavoriteCard(
-                        context,
-                        p['name']!,
-                        p['category']!,
-                        p['price']!,
-                        p['image']!,
-                      );
-                    },
-                  ),
             ),
           ],
         ),
@@ -84,7 +125,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
   Widget _buildAppBarIcon(IconData icon) {
     return Container(
-      width: 45, height: 45,
+      width: 45,
+      height: 45,
       decoration: BoxDecoration(
         color: const Color(0xFF3F4C7A),
         borderRadius: BorderRadius.circular(12),
@@ -93,7 +135,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
   }
 
-  Widget _buildFavoriteCard(BuildContext context, String name, String category, String price, String imgPath) {
+  Widget _buildFavoriteCard(
+    BuildContext context,
+    String name,
+    String category,
+    String price,
+    String imgPath,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -106,7 +154,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
               productCategory: category,
             ),
           ),
-        );
+        ).then((_) {
+          setState(() {});
+        });
       },
       child: Container(
         decoration: BoxDecoration(
@@ -128,9 +178,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // COEUR CLIQUABLE POUR SUPPRIMER
                   Positioned(
-                    top: 8, right: 8,
+                    top: 8,
+                    right: 8,
                     child: GestureDetector(
                       onTap: () => removeFromFavorites(name),
                       child: Container(
@@ -139,12 +189,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           color: Colors.white.withOpacity(0.8),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.favorite, color: blokOrange, size: 20),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: blokOrange,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
                   Positioned(
-                    bottom: 10, left: 0,
+                    bottom: 10,
+                    left: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -156,7 +211,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       ),
                       child: Text(
                         price,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),
@@ -168,21 +227,44 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(category, style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 10)),
+                  Text(
+                    name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    category,
+                    style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 10),
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     height: 32,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailsPage(
+                              productName: name,
+                              productPrice: price,
+                              productImage: imgPath,
+                              productCategory: category,
+                            ),
+                          ),
+                        ).then((_) => setState(() {}));
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: blokOrange,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: EdgeInsets.zero,
                         elevation: 0,
                       ),
-                      child: const Text("DÉTAILS", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        "DÉTAILS",
+                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],

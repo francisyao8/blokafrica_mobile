@@ -21,14 +21,38 @@ class DetailsPage extends StatefulWidget {
 }
 
 class _DetailsPageState extends State<DetailsPage> {
-  
+
+  // --- FONCTION DE TOAST PERSONNALISÉE  ---
+  void _showNotification(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: Colors.black.withOpacity(0.5), 
+        duration: const Duration(seconds: 3), 
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
+      ),
+    );
+  }
+
   // Fonction pour basculer l'état de favori
   void toggleFavorite() {
-    setState(() {
-      int index = favoriteProducts.indexWhere((p) => p['name'] == widget.productName);
+    String message = "";
 
+    setState(() {
+      int index = favoriteProducts.indexWhere(
+        (p) => p['name'] == widget.productName,
+      );
       if (index != -1) {
         favoriteProducts.removeAt(index);
+        message = "Produit retiré des favoris";
       } else {
         favoriteProducts.add({
           'name': widget.productName,
@@ -36,14 +60,19 @@ class _DetailsPageState extends State<DetailsPage> {
           'price': widget.productPrice,
           'image': widget.productImage,
         });
+        message = "Produit ajouté aux favoris";
       }
     });
+
+    // Appel du toast personnalisé
+    _showNotification(message);
   }
 
   @override
   Widget build(BuildContext context) {
-    // On vérifie si le produit actuel est dans la liste globale des favoris
-    bool isFavorite = favoriteProducts.any((p) => p['name'] == widget.productName);
+    bool isFavorite = favoriteProducts.any(
+      (p) => p['name'] == widget.productName,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -86,9 +115,9 @@ class _DetailsPageState extends State<DetailsPage> {
                     // --- IMAGE PRODUIT ---
                     Center(
                       child: Image.asset(
-                        widget.productImage, // Utilisation de widget. pour accéder aux propriétés
+                        widget.productImage,
                         height: 350,
-                        fit: BoxFit.contain, 
+                        fit: BoxFit.contain,
                       ),
                     ),
 
@@ -123,9 +152,9 @@ class _DetailsPageState extends State<DetailsPage> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
-                                    Icons.favorite, 
-                                    color: isFavorite ? blokOrange : Colors.grey.shade400, 
-                                    size: 22
+                                    Icons.favorite,
+                                    color: isFavorite ? blokOrange : Colors.grey.shade400,
+                                    size: 22,
                                   ),
                                 ),
                               ),
@@ -141,7 +170,11 @@ class _DetailsPageState extends State<DetailsPage> {
                             ),
                             child: Text(
                               widget.productCategory,
-                              style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 12, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Color(0xFF3F4C7A),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 30),
@@ -183,7 +216,7 @@ class _DetailsPageState extends State<DetailsPage> {
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1D264F), 
+                      color: Color(0xFF1D264F),
                     ),
                   ),
                   ElevatedButton(

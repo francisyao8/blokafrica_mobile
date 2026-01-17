@@ -3,7 +3,7 @@ import '../utils/constants.dart';
 import 'details_page.dart';
 import '../utils/data_manager.dart';
 
-// 1. On transforme le StatelessWidget en StatefulWidget
+//  On transforme le StatelessWidget en StatefulWidget
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -12,28 +12,54 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 2. Fonction pour ajouter/retirer des favoris et rafraîchir l'écran
+
+  // --- FONCTION DE TOAST PERSONNALISÉE  ---
+  void _showNotification(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: Colors.black.withOpacity(0.5), 
+        duration: const Duration(seconds: 3), 
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
+      ),
+    );
+  }
+
+  //  Fonction pour ajouter/retirer des favoris et rafraîchir l'écran
   void toggleFavorite(
     String name,
     String category,
     String price,
     String imgPath,
   ) {
-    setState(() {
-      // On cherche si le produit existe déjà dans la liste globale favoriteProducts
-      int index = favoriteProducts.indexWhere((p) => p['name'] == name);
+    String message = "";
 
+    setState(() {
+      int index = favoriteProducts.indexWhere((p) => p['name'] == name);
       if (index != -1) {
-        favoriteProducts.removeAt(index); // Supprimer si présent
+        favoriteProducts.removeAt(index);
+        message = "Produit retiré des favoris";
       } else {
         favoriteProducts.add({
           'name': name,
           'category': category,
           'price': price,
           'image': imgPath,
-        }); // Ajouter si absent
+        });
+        message = "Produit ajouté aux favoris";
       }
     });
+
+    // Appel du toast personnalisé
+    _showNotification(message);
   }
 
   @override
@@ -77,31 +103,13 @@ class _HomePageState extends State<HomePage> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 16),
                 children: [
-                  _buildCategoryCard(
-                    "Protection\net sécurité",
-                    "assets/categorie/protection-securite.png",
-                  ),
+                  _buildCategoryCard("Protection\net sécurité", "assets/categorie/protection-securite.png"),
                   _buildCategoryCard("Outils", "assets/categorie/outils.png"),
-                  _buildCategoryCard(
-                    "Menuiserie\net serrurerie",
-                    "assets/categorie/menuiserie-serrurerie.png",
-                  ),
-                  _buildCategoryCard(
-                    "Quincaillerie",
-                    "assets/categorie/quincaillerie.png",
-                  ),
-                  _buildCategoryCard(
-                    "Peinture et\nrevêtements",
-                    "assets/categorie/peinture-revetement.png",
-                  ),
-                  _buildCategoryCard(
-                    "Electricité",
-                    "assets/categorie/electricite.png",
-                  ),
-                  _buildCategoryCard(
-                    "Plomberie et\nsanitaires",
-                    "assets/categorie/plomberie-sanitaires.png",
-                  ),
+                  _buildCategoryCard("Menuiserie\net serrurerie", "assets/categorie/menuiserie-serrurerie.png"),
+                  _buildCategoryCard("Quincaillerie", "assets/categorie/quincaillerie.png"),
+                  _buildCategoryCard("Peinture et\nrevêtements", "assets/categorie/peinture-revetement.png"),
+                  _buildCategoryCard("Electricité", "assets/categorie/electricite.png"),
+                  _buildCategoryCard("Plomberie et\nsanitaires", "assets/categorie/plomberie-sanitaires.png"),
                 ],
               ),
             ),
@@ -117,10 +125,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: const Text(
-                      "voir plus",
-                      style: TextStyle(color: blokOrange),
-                    ),
+                    child: const Text("voir plus", style: TextStyle(color: blokOrange)),
                   ),
                 ],
               ),
@@ -136,35 +141,10 @@ class _HomePageState extends State<HomePage> {
                 mainAxisSpacing: 15,
                 childAspectRatio: 0.72,
                 children: [
-                  // Suppression du booléen fixe 'false' ou 'true' : on vérifie dynamiquement
-                  _buildProductCard(
-                    context,
-                    "PANTINOX SR9 ...",
-                    "Peinture et revêtements",
-                    "24 500 fcfa",
-                    "assets/produits/peinture.jpeg",
-                  ),
-                  _buildProductCard(
-                    context,
-                    "Grillage 1 doigt ...",
-                    "Quincaillerie",
-                    "12 000 fcfa",
-                    "assets/produits/grillage.jpg",
-                  ),
-                  _buildProductCard(
-                    context,
-                    "Ciment CPJ 45 ...",
-                    "Matériaux",
-                    "4 500 fcfa",
-                    "assets/produits/ciment.png",
-                  ),
-                  _buildProductCard(
-                    context,
-                    "Poubelle Ville ...",
-                    "Sanitaire",
-                    "15 000 fcfa",
-                    "assets/produits/poubelle.webp",
-                  ),
+                  _buildProductCard(context, "PANTINOX SR9 ...", "Peinture et revêtements", "24 500 fcfa", "assets/produits/peinture.jpeg"),
+                  _buildProductCard(context, "Grillage 1 doigt ...", "Quincaillerie", "12 000 fcfa", "assets/produits/grillage.jpg"),
+                  _buildProductCard(context, "Ciment CPJ 45 ...", "Matériaux", "4 500 fcfa", "assets/produits/ciment.png"),
+                  _buildProductCard(context, "Poubelle Ville ...", "Sanitaire", "15 000 fcfa", "assets/produits/poubelle.webp"),
                 ],
               ),
             ),
@@ -176,8 +156,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildAppBarIcon(IconData icon) {
     return Container(
-      width: 45,
-      height: 45,
+      width: 45, height: 45,
       decoration: BoxDecoration(
         color: const Color(0xFF3F4C7A),
         borderRadius: BorderRadius.circular(12),
@@ -217,12 +196,7 @@ class _HomePageState extends State<HomePage> {
                 alignment: Alignment.bottomLeft,
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    height: 1.1,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1),
                 ),
               ),
             ),
@@ -232,14 +206,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProductCard(
-    BuildContext context,
-    String name,
-    String category,
-    String price,
-    String imgPath,
-  ) {
-    // 3. Vérification si le produit est actuellement dans les favoris
+  Widget _buildProductCard(BuildContext context, String name, String category, String price, String imgPath) {
     bool isFavorite = favoriteProducts.any((p) => p['name'] == name);
 
     return GestureDetector(
@@ -254,7 +221,7 @@ class _HomePageState extends State<HomePage> {
               productCategory: category,
             ),
           ),
-        );
+        ).then((_) => setState(() {})); // Rafraîchit l'état au retour de la page détails
       },
       child: Container(
         decoration: BoxDecoration(
@@ -268,60 +235,29 @@ class _HomePageState extends State<HomePage> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                    child: Image.asset(
-                      imgPath,
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                    child: Image.asset(imgPath, width: double.infinity, height: double.infinity, fit: BoxFit.cover),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 8, right: 8,
                     child: GestureDetector(
-                      // 4. On appelle toggleFavorite lors du clic sur le cœur
-                      onTap: () =>
-                          toggleFavorite(name, category, price, imgPath),
+                      onTap: () => toggleFavorite(name, category, price, imgPath),
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.black26,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.favorite,
-                          color: isFavorite ? blokOrange : Colors.white,
-                          size: 18,
-                        ),
+                        decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
+                        child: Icon(Icons.favorite, color: isFavorite ? blokOrange : Colors.white, size: 18),
                       ),
                     ),
                   ),
                   Positioned(
-                    bottom: 10,
-                    left: 0,
+                    bottom: 10, left: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
-                        borderRadius: const BorderRadius.only(
-                          topRight: Radius.circular(5),
-                          bottomRight: Radius.circular(5),
-                        ),
+                        borderRadius: const BorderRadius.only(topRight: Radius.circular(5), bottomRight: Radius.circular(5)),
                       ),
-                      child: Text(
-                        price,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
+                      child: Text(price, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                     ),
                   ),
                 ],
@@ -332,48 +268,23 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    category,
-                    style: const TextStyle(
-                      color: Color(0xFF3F4C7A),
-                      fontSize: 11.5,
-                    ),
-                  ),
+                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(category, style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 11.5)),
                   const SizedBox(height: 8),
                   SizedBox(
-                    width: double.infinity,
-                    height: 32,
+                    width: double.infinity, height: 32,
                     child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: blokOrange,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        backgroundColor: blokOrange, elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         padding: EdgeInsets.zero,
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.add, color: Colors.white, size: 16),
-                          Text(
-                            " AJOUTER",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text(" AJOUTER", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
