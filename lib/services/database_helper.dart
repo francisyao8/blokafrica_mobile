@@ -1,53 +1,39 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import '../models/product.dart';
 
 class DatabaseHelper {
+  // Garde la même structure pour ne pas casser tes pages
   static final DatabaseHelper instance = DatabaseHelper._init();
-  static Database? _database;
-
   DatabaseHelper._init();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('blok_stock.db');
-    return _database!;
-  }
+  // On simule la base de données avec une liste en mémoire
+  static List<Product> _mockDatabase = [];
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
-  }
+  // On simule l'ouverture de la DB
+  Future<dynamic> get database async => null;
 
- Future _createDB(Database db, int version) async {
-  await db.execute('''
-    CREATE TABLE products(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      price REAL NOT NULL,
-      category TEXT NOT NULL,
-      image TEXT NOT NULL
-    )
-  ''');
-}
-
-  // Ajouter un produit
+  // AJOUTER
   Future<int> insert(Product product) async {
-    final db = await instance.database;
-    return await db.insert('products', product.toMap());
+    // On simule un ID auto-incrémenté
+    final newProduct = Product(
+      id: _mockDatabase.length + 1,
+      name: product.name,
+      category: product.category,
+      image: product.image,
+      price: product.price,
+      description: product.description,
+    );
+    _mockDatabase.add(newProduct);
+    return 1;
   }
 
-  // Récupérer tous les produits
+  // RÉCUPÉRER
   Future<List<Product>> getAllProducts() async {
-    final db = await instance.database;
-    final result = await db.query('products');
-    return result.map((json) => Product.fromMap(json)).toList();
+    return List.from(_mockDatabase);
   }
 
-  // Supprimer un produit (Bonus Mission 2)
+  // SUPPRIMER
   Future<int> delete(int id) async {
-    final db = await instance.database;
-    return await db.delete('products', where: 'id = ?', whereArgs: [id]);
+    _mockDatabase.removeWhere((p) => p.id == id);
+    return 1;
   }
 }

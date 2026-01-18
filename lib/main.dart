@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:device_preview/device_preview.dart'; 
 import 'pages/home_page.dart';
 import 'pages/favorites_page.dart';
 import 'utils/constants.dart';
 
-void main() => runApp(const BlokApp());
+void main() => runApp(
+      DevicePreview(
+        enabled: true, // Passe à false pour désactiver l'émulateur
+        builder: (context) => const BlokApp(),
+      ),
+    );
 
 class BlokApp extends StatelessWidget {
   const BlokApp({super.key});
@@ -12,6 +18,11 @@ class BlokApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // Ajouts pour Device Preview
+      useInheritedMediaQuery: true, 
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
+      // Fin des ajouts
       theme: ThemeData(
         useMaterial3: true,
         primaryColor: blokBlue,
@@ -32,12 +43,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
 
- 
   final List<Widget> _screens = [
-    const HomePage(), 
-    const Center(child: Text("Mon Panier")), 
-    const FavoritesPage(), 
-    const Center(child: Text("Profil")), 
+    const HomePage(),
+    const Center(child: Text("Mon Panier")),
+    const FavoritesPage(),
+    const Center(child: Text("Profil")),
   ];
 
   @override
@@ -45,20 +55,17 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
-        
         decoration: const BoxDecoration(
           border: Border(
-            top: BorderSide(color: blokOrange, width: 2.0), 
+            top: BorderSide(color: blokOrange, width: 2.0),
           ),
         ),
         child: BottomNavigationBar(
-          backgroundColor: blokBlue, 
+          backgroundColor: blokBlue,
           currentIndex: _currentIndex,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor:
-              blokOrange, 
-          unselectedItemColor:
-              Colors.white, 
+          selectedItemColor: blokOrange,
+          unselectedItemColor: Colors.white,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           showSelectedLabels: true,
@@ -67,11 +74,11 @@ class _MainNavigationState extends State<MainNavigation> {
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_filled),
-              label: 'Acceuil',
+              label: 'Accueil',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.shopping_basket_outlined),
-              label: 'pannier', 
+              label: 'Panier',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.favorite),
@@ -79,7 +86,7 @@ class _MainNavigationState extends State<MainNavigation> {
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
-              label: 'Profile',
+              label: 'Profil',
             ),
           ],
         ),

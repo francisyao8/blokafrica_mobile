@@ -4,6 +4,7 @@ import '../models/product.dart';
 import '../services/api_service.dart';
 import '../services/database_helper.dart';
 import 'details_page.dart';
+import 'dart:ui';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -46,6 +47,28 @@ class _ProductPageState extends State<ProductPage>
     super.dispose();
   }
 
+  // --- NOUVELLE MÉTHODE : TOAST PERSONNALISÉ ---
+  void _showNotification(String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: Colors.black.withOpacity(0.7),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
+      ),
+    );
+  }
+
   Future<void> _fetchInitialData() async {
     try {
       final api = ApiService();
@@ -74,6 +97,7 @@ class _ProductPageState extends State<ProductPage>
     }
   }
 
+  // --- LOGIQUE TOGFAVORITE MODIFIÉE ---
   Future<void> _toggleFavorite(Product p) async {
     final isAlreadyFav = dbFavorites.any((fav) => fav.name == p.name);
 
@@ -81,9 +105,11 @@ class _ProductPageState extends State<ProductPage>
       final favToRemove = dbFavorites.firstWhere((fav) => fav.name == p.name);
       if (favToRemove.id != null) {
         await DatabaseHelper.instance.delete(favToRemove.id!);
+        _showNotification("${p.name} retiré des favoris"); // Toast retrait
       }
     } else {
       await DatabaseHelper.instance.insert(p);
+      _showNotification("${p.name} ajouté aux favoris"); // Toast ajout
     }
 
     final updatedFavs = await DatabaseHelper.instance.getAllProducts();
@@ -116,7 +142,6 @@ class _ProductPageState extends State<ProductPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      // L'AppBar officielle permet au bleu de monter jusqu'en haut de l'écran
       appBar: AppBar(
         backgroundColor: blokBlue,
         elevation: 0,
@@ -143,7 +168,7 @@ class _ProductPageState extends State<ProductPage>
         child: const Icon(Icons.home, color: Colors.white),
       ),
       body: SafeArea(
-        top: false, // On laisse l'AppBar gérer le haut
+        top: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -152,17 +177,26 @@ class _ProductPageState extends State<ProductPage>
               height: 35,
               child: isLoading
                   ? _buildCategorySkeleton()
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: categories.length,
-                      itemBuilder: (context, index) {
-                        bool isSelected = selectedCategory == categories[index];
-                        return _buildCategoryChip(
-                          categories[index],
-                          isSelected,
-                        );
-                      },
+                  : ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {
+                          PointerDeviceKind.touch,
+                          PointerDeviceKind.mouse,
+                        },
+                      ),
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          bool isSelected =
+                              selectedCategory == categories[index];
+                          return _buildCategoryChip(
+                            categories[index],
+                            isSelected,
+                          );
+                        },
+                      ),
                     ),
             ),
             const Padding(
@@ -477,8 +511,6 @@ class _ProductPageState extends State<ProductPage>
       ),
     );
   }
-
-  // --- SKELETONS (ANIMATIONS DE CHARGEMENT) ---
 
   Widget _buildCategorySkeleton() {
     return ListView.builder(

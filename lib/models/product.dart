@@ -28,7 +28,6 @@ class Product {
   }
 
   // --- POUR LA BASE DE DONNÉES (SQL) ---
-  // Cette méthode enlève le rouge sur product.toMap()
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -36,11 +35,10 @@ class Product {
       'price': price,
       'category': category,
       'image': image,
-      // On peut ajouter quantity si tu en as besoin pour le stock
+      'description': description, 
     };
   }
 
-  // Cette méthode enlève le rouge sur Product.fromMap()
   factory Product.fromMap(Map<String, dynamic> map) {
     return Product(
       id: map['id'],
@@ -48,6 +46,7 @@ class Product {
       price: map['price'],
       category: map['category'] ?? "Inconnu",
       image: map['image'] ?? "",
+      description: map['description'] ?? "", 
     );
   }
 }

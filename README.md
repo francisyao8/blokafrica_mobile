@@ -101,4 +101,4 @@ lib/
 * flutter pub get
 
 # Lancer l'application :
-* flutter run
+* flutter run -d chrome #pour lancher sur chrome
