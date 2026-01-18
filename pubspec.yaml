@@ -44,6 +44,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1  
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -70,6 +71,14 @@ flutter:
   assets:
     - assets/categorie/
     - assets/produits/
+    - assets/logo/blok-logo.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo/blok-logo.png"
+  adaptive_icon_background: "#1D264F"
+  adaptive_icon_foreground: "assets/logo/blok-logo.png"  
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
