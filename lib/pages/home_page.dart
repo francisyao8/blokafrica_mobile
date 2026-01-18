@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import 'details_page.dart';
-import '../utils/data_manager.dart';
+import 'product_page.dart';
+import '../models/product.dart';
+import '../services/api_service.dart';
+import '../services/database_helper.dart'; 
 
-//  On transforme le StatelessWidget en StatefulWidget
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -11,55 +13,75 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  List<Product> newProducts = [];
+  List<Product> dbFavorites = []; // Liste locale pour l'état des coeurs
+  List<Map<String, String>> categories = [];
+  bool isLoading = true;
 
-  // --- FONCTION DE TOAST PERSONNALISÉE  ---
-  void _showNotification(String message) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar(); 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: Colors.black.withOpacity(0.5), 
-        duration: const Duration(seconds: 3), 
-        behavior: SnackBarBehavior.floating,
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
-      ),
-    );
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(_controller);
+
+    _loadAllData();
   }
 
-  //  Fonction pour ajouter/retirer des favoris et rafraîchir l'écran
-  void toggleFavorite(
-    String name,
-    String category,
-    String price,
-    String imgPath,
-  ) {
-    String message = "";
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    setState(() {
-      int index = favoriteProducts.indexWhere((p) => p['name'] == name);
-      if (index != -1) {
-        favoriteProducts.removeAt(index);
-        message = "Produit retiré des favoris";
-      } else {
-        favoriteProducts.add({
-          'name': name,
-          'category': category,
-          'price': price,
-          'image': imgPath,
+  Future<void> _loadAllData() async {
+    try {
+      final api = ApiService();
+      // On charge l'API et la DB SQL en parallèle
+      final results = await Future.wait([
+        api.fetchCategories(),
+        api.fetchProducts(),
+        DatabaseHelper.instance.getAllProducts(), // Chargement des favoris SQL
+      ]);
+
+      if (mounted) {
+        setState(() {
+          categories = results[0] as List<Map<String, String>>;
+          newProducts = (results[1] as List<Product>).take(4).toList();
+          dbFavorites = results[2] as List<Product>;
+          isLoading = false;
         });
-        message = "Produit ajouté aux favoris";
       }
-    });
+    } catch (e) {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
 
-    // Appel du toast personnalisé
-    _showNotification(message);
+  // --- LOGIQUE TOGGLE FAVORIS SQL ---
+  Future<void> _toggleFavorite(Product p) async {
+    final isAlreadyFav = dbFavorites.any((fav) => fav.name == p.name);
+
+    if (isAlreadyFav) {
+      final favToRemove = dbFavorites.firstWhere((fav) => fav.name == p.name);
+      if (favToRemove.id != null) {
+        await DatabaseHelper.instance.delete(favToRemove.id!);
+      }
+    } else {
+      await DatabaseHelper.instance.insert(p);
+    }
+
+    // Rafraîchir la liste locale pour mettre à jour l'UI
+    final updatedFavs = await DatabaseHelper.instance.getAllProducts();
+    setState(() {
+      dbFavorites = updatedFavs;
+    });
   }
 
   @override
@@ -70,14 +92,11 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: blokBlue,
         elevation: 0,
         toolbarHeight: 80,
-        title: const Text(
-          "Acceuil",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text("Accueil",
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold)),
         actions: [
           _buildAppBarIcon(Icons.settings),
           const SizedBox(width: 10),
@@ -85,82 +104,91 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              child: Text(
-                "categories",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      body: RefreshIndicator(
+        onRefresh: _loadAllData,
+        color: blokOrange,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Text("Catégories",
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
-            ),
-
-            SizedBox(
-              height: 120,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 16),
-                children: [
-                  _buildCategoryCard("Protection\net sécurité", "assets/categorie/protection-securite.png"),
-                  _buildCategoryCard("Outils", "assets/categorie/outils.png"),
-                  _buildCategoryCard("Menuiserie\net serrurerie", "assets/categorie/menuiserie-serrurerie.png"),
-                  _buildCategoryCard("Quincaillerie", "assets/categorie/quincaillerie.png"),
-                  _buildCategoryCard("Peinture et\nrevêtements", "assets/categorie/peinture-revetement.png"),
-                  _buildCategoryCard("Electricité", "assets/categorie/electricite.png"),
-                  _buildCategoryCard("Plomberie et\nsanitaires", "assets/categorie/plomberie-sanitaires.png"),
-                ],
+              SizedBox(
+                height: 120,
+                child: isLoading
+                    ? ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(left: 16),
+                        itemCount: 4,
+                        itemBuilder: (context, index) =>
+                            _buildSkeletonCategory(),
+                      )
+                    : ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(left: 16),
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) => _buildCategoryCard(
+                          categories[index]['title']!,
+                          categories[index]['image']!,
+                        ),
+                      ),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Nouveaux produits",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Nouveaux produits",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    if (!isLoading)
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const ProductPage()))
+                            .then((_) => _loadAllData()), // Recharger au retour
+                        child: const Text("voir plus",
+                            style: TextStyle(color: blokOrange)),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                    childAspectRatio: 0.72,
                   ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text("voir plus", style: TextStyle(color: blokOrange)),
-                  ),
-                ],
+                  itemCount: isLoading ? 4 : newProducts.length,
+                  itemBuilder: (context, index) => isLoading
+                      ? _buildSkeletonProduct()
+                      : _buildProductCard(context, newProducts[index]),
+                ),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 15,
-                mainAxisSpacing: 15,
-                childAspectRatio: 0.72,
-                children: [
-                  _buildProductCard(context, "PANTINOX SR9 ...", "Peinture et revêtements", "24 500 fcfa", "assets/produits/peinture.jpeg"),
-                  _buildProductCard(context, "Grillage 1 doigt ...", "Quincaillerie", "12 000 fcfa", "assets/produits/grillage.jpg"),
-                  _buildProductCard(context, "Ciment CPJ 45 ...", "Matériaux", "4 500 fcfa", "assets/produits/ciment.png"),
-                  _buildProductCard(context, "Poubelle Ville ...", "Sanitaire", "15 000 fcfa", "assets/produits/poubelle.webp"),
-                ],
-              ),
-            ),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // ... (Garder _buildSkeletonCategory, _buildSkeletonProduct, _buildAppBarIcon, _buildCategoryCard inchangés)
+
   Widget _buildAppBarIcon(IconData icon) {
     return Container(
       width: 45, height: 45,
-      decoration: BoxDecoration(
-        color: const Color(0xFF3F4C7A),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: const Color(0xFF3F4C7A), borderRadius: BorderRadius.circular(12)),
       child: Icon(icon, color: Colors.white, size: 24),
     );
   }
@@ -194,9 +222,67 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(8.0),
               child: Align(
                 alignment: Alignment.bottomLeft,
-                child: Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1),
+                child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, height: 1.1)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCategory() {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]!, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonProduct() {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 10, width: 80, color: Colors.grey[300]),
+                    const SizedBox(height: 6),
+                    Container(height: 8, width: 50, color: Colors.grey[300]),
+                    const Spacer(),
+                    Container(height: 25, width: double.infinity, 
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(8)
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -206,28 +292,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, String name, String category, String price, String imgPath) {
-    bool isFavorite = favoriteProducts.any((p) => p['name'] == name);
+  Widget _buildProductCard(BuildContext context, Product p) {
+    // Vérification de l'état favori via la liste SQL chargée
+    bool isFavorite = dbFavorites.any((fav) => fav.name == p.name);
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DetailsPage(
-              productName: name,
-              productPrice: price,
-              productImage: imgPath,
-              productCategory: category,
-            ),
-          ),
-        ).then((_) => setState(() {})); // Rafraîchit l'état au retour de la page détails
+            context,
+            MaterialPageRoute(
+                builder: (context) => DetailsPage(
+                      productName: p.name,
+                      productPrice: "${p.price} fcfa",
+                      productImage: p.image,
+                      productCategory: p.category,
+                    ))).then((_) => _loadAllData());
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(15),
-        ),
+            color: const Color(0xFFF5F5F5),
+            borderRadius: BorderRadius.circular(15)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -235,29 +319,45 @@ class _HomePageState extends State<HomePage> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                    child: Image.asset(imgPath, width: double.infinity, height: double.infinity, fit: BoxFit.cover),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(15)),
+                    child: Image.asset(p.image,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover),
                   ),
                   Positioned(
-                    top: 8, right: 8,
+                    top: 8,
+                    right: 8,
                     child: GestureDetector(
-                      onTap: () => toggleFavorite(name, category, price, imgPath),
+                      onTap: () => _toggleFavorite(p),
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
-                        child: Icon(Icons.favorite, color: isFavorite ? blokOrange : Colors.white, size: 18),
+                        decoration: const BoxDecoration(
+                            color: Colors.black26, shape: BoxShape.circle),
+                        child: Icon(Icons.favorite,
+                            color: isFavorite ? blokOrange : Colors.white,
+                            size: 18),
                       ),
                     ),
                   ),
                   Positioned(
-                    bottom: 10, left: 0,
+                    bottom: 10,
+                    left: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
-                        borderRadius: const BorderRadius.only(topRight: Radius.circular(5), bottomRight: Radius.circular(5)),
+                        borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(5),
+                            bottomRight: Radius.circular(5)),
                       ),
-                      child: Text(price, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Text("${p.price} fcfa",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13)),
                     ),
                   ),
                 ],
@@ -268,23 +368,34 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(category, style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 11.5)),
+                  Text(p.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 12.5),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  Text(p.category,
+                      style: const TextStyle(
+                          color: Color(0xFF3F4C7A), fontSize: 11.5)),
                   const SizedBox(height: 8),
                   SizedBox(
-                    width: double.infinity, height: 32,
+                    width: double.infinity,
+                    height: 32,
                     child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: blokOrange, elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: EdgeInsets.zero,
-                      ),
+                          backgroundColor: blokOrange,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8))),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.add, color: Colors.white, size: 16),
-                          Text(" AJOUTER", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text(" AJOUTER",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import 'details_page.dart';
-import '../utils/data_manager.dart';
+import '../models/product.dart';
+import '../services/database_helper.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -10,38 +11,69 @@ class FavoritesPage extends StatefulWidget {
   State<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
-  
-  // --- FONCTION DE TOAST PERSONNALISÉE ---
+class _FavoritesPageState extends State<FavoritesPage>
+    with SingleTickerProviderStateMixin {
+  List<Product> favoriteDetails = [];
+  bool isLoading = true;
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(_controller);
+
+    _loadFavorites();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadFavorites() async {
+    final details = await DatabaseHelper.instance.getAllProducts();
+    if (mounted) {
+      setState(() {
+        favoriteDetails = details;
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> removeFromFavorites(Product p) async {
+    if (p.id != null) {
+      await DatabaseHelper.instance.delete(p.id!);
+      _showNotification("${p.name} retiré des favoris");
+      _loadFavorites();
+    }
+  }
+
   void _showNotification(String message) {
-    
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        backgroundColor: Colors.black.withOpacity(0.5), 
-        duration: const Duration(seconds: 3), 
-        behavior: SnackBarBehavior.floating, 
-        elevation: 0,
+        backgroundColor: Colors.black.withOpacity(0.7),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.only(bottom: 20, left: 50, right: 50),
       ),
     );
-  }
-
-  // Fonction pour supprimer un produit
-  void removeFromFavorites(String name) {
-    setState(() {
-      favoriteProducts.removeWhere((p) => p['name'] == name);
-    });
-    
-    // Appel du toast personnalisé
-    _showNotification("Produit retiré des favoris");
   }
 
   @override
@@ -52,6 +84,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
         backgroundColor: blokBlue,
         elevation: 0,
         toolbarHeight: 80,
+        automaticallyImplyLeading:
+            false, 
         title: const Text(
           "Favoris",
           style: TextStyle(
@@ -74,48 +108,136 @@ class _FavoritesPageState extends State<FavoritesPage> {
           children: [
             const Text(
               "Mes favoris",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1D264F),
+              ),
             ),
             const SizedBox(height: 20),
+            Expanded(child: _buildBody()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (isLoading) {
+      return GridView.builder(
+        itemCount: 6,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 15,
+          mainAxisSpacing: 15,
+          childAspectRatio: 0.72,
+        ),
+        itemBuilder: (context, index) => _buildSkeletonCard(),
+      );
+    }
+
+    // --- MODIFICATION ICI : DESIGN ÉTAT VIDE ---
+    if (favoriteDetails.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.grey.withOpacity(0.4),
+                    Colors.grey.withOpacity(0.1),
+                  ],
+                ),
+              ),
+              child: const Icon(
+                Icons
+                    .heart_broken_rounded, 
+                size: 50,
+                color: Color(0xFF1D264F),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "Aucun produit favori",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Cliquez sur le cœur pour ajouter des articles",
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      itemCount: favoriteDetails.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 15,
+        mainAxisSpacing: 15,
+        childAspectRatio: 0.72,
+      ),
+      itemBuilder: (context, index) =>
+          _buildFavoriteCard(context, favoriteDetails[index]),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return FadeTransition(
+      opacity: _animation,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          children: [
             Expanded(
-              child: favoriteProducts.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.favorite_border,
-                            color: Colors.grey,
-                            size: 60,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            "Aucun favori pour le moment",
-                            style: TextStyle(color: Colors.grey, fontSize: 16),
-                          ),
-                        ],
+              flex: 3,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(15),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 10, width: 90, color: Colors.grey[200]),
+                    const SizedBox(height: 6),
+                    Container(height: 8, width: 60, color: Colors.grey[200]),
+                    const Spacer(),
+                    Container(
+                      height: 32,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    )
-                  : GridView.builder(
-                      itemCount: favoriteProducts.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 15,
-                            mainAxisSpacing: 15,
-                            childAspectRatio: 0.72,
-                          ),
-                      itemBuilder: (context, index) {
-                        final p = favoriteProducts[index];
-                        return _buildFavoriteCard(
-                          context,
-                          p['name']!,
-                          p['category']!,
-                          p['price']!,
-                          p['image']!,
-                        );
-                      },
                     ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -131,32 +253,24 @@ class _FavoritesPageState extends State<FavoritesPage> {
         color: const Color(0xFF3F4C7A),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: Colors.white, size: 24),
+      child: Icon(icon, color: Colors.white, size: 22),
     );
   }
 
-  Widget _buildFavoriteCard(
-    BuildContext context,
-    String name,
-    String category,
-    String price,
-    String imgPath,
-  ) {
+  Widget _buildFavoriteCard(BuildContext context, Product p) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => DetailsPage(
-              productName: name,
-              productPrice: price,
-              productImage: imgPath,
-              productCategory: category,
+              productName: p.name,
+              productPrice: "${p.price} fcfa",
+              productImage: p.image,
+              productCategory: p.category,
             ),
           ),
-        ).then((_) {
-          setState(() {});
-        });
+        ).then((_) => _loadFavorites());
       },
       child: Container(
         decoration: BoxDecoration(
@@ -170,9 +284,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
+                    ),
                     child: Image.asset(
-                      imgPath,
+                      p.image,
                       width: double.infinity,
                       height: double.infinity,
                       fit: BoxFit.cover,
@@ -182,17 +298,17 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     top: 8,
                     right: 8,
                     child: GestureDetector(
-                      onTap: () => removeFromFavorites(name),
+                      onTap: () => removeFromFavorites(p),
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.8),
+                        decoration: const BoxDecoration(
+                          color: Colors.black26,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.favorite,
                           color: blokOrange,
-                          size: 20,
+                          size: 18,
                         ),
                       ),
                     ),
@@ -201,7 +317,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     bottom: 10,
                     left: 0,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.5),
                         borderRadius: const BorderRadius.only(
@@ -210,7 +329,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                         ),
                       ),
                       child: Text(
-                        price,
+                        "${p.price} fcfa",
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -228,14 +347,20 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    p.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    category,
-                    style: const TextStyle(color: Color(0xFF3F4C7A), fontSize: 10),
+                    p.category,
+                    style: const TextStyle(
+                      color: Color(0xFF3F4C7A),
+                      fontSize: 10,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
@@ -247,23 +372,28 @@ class _FavoritesPageState extends State<FavoritesPage> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => DetailsPage(
-                              productName: name,
-                              productPrice: price,
-                              productImage: imgPath,
-                              productCategory: category,
+                              productName: p.name,
+                              productPrice: "${p.price} fcfa",
+                              productImage: p.image,
+                              productCategory: p.category,
                             ),
                           ),
-                        ).then((_) => setState(() {}));
+                        ).then((_) => _loadFavorites());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: blokOrange,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         elevation: 0,
                       ),
                       child: const Text(
                         "DÉTAILS",
-                        style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),

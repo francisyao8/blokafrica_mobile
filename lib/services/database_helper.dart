@@ -20,16 +20,17 @@ class DatabaseHelper {
     return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
-  Future _createDB(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE products(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        quantity INTEGER NOT NULL,
-        price REAL NOT NULL
-      )
-    ''');
-  }
+ Future _createDB(Database db, int version) async {
+  await db.execute('''
+    CREATE TABLE products(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      category TEXT NOT NULL,
+      image TEXT NOT NULL
+    )
+  ''');
+}
 
   // Ajouter un produit
   Future<int> insert(Product product) async {
