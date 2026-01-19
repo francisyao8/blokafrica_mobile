@@ -155,12 +155,7 @@ class _ProductPageState extends State<ProductPage>
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          _buildAppBarIcon(Icons.settings),
-          const SizedBox(width: 10),
-          _buildAppBarIcon(Icons.notifications),
-          const SizedBox(width: 16),
-        ],
+
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pop(context),
@@ -219,18 +214,6 @@ class _ProductPageState extends State<ProductPage>
 
   // --- WIDGETS DE COMPOSANTS ---
 
-  Widget _buildAppBarIcon(IconData icon) {
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFF3F4C7A),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Icon(icon, color: Colors.white, size: 22),
-    );
-  }
 
   Widget _buildSearchBar() {
     return Padding(

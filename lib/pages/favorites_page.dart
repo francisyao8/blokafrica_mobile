@@ -94,12 +94,7 @@ class _FavoritesPageState extends State<FavoritesPage>
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          _buildAppBarIcon(Icons.settings),
-          const SizedBox(width: 10),
-          _buildAppBarIcon(Icons.notifications),
-          const SizedBox(width: 16),
-        ],
+        
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -245,17 +240,7 @@ class _FavoritesPageState extends State<FavoritesPage>
     );
   }
 
-  Widget _buildAppBarIcon(IconData icon) {
-    return Container(
-      width: 45,
-      height: 45,
-      decoration: BoxDecoration(
-        color: const Color(0xFF3F4C7A),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, color: Colors.white, size: 22),
-    );
-  }
+
 
   Widget _buildFavoriteCard(BuildContext context, Product p) {
     return GestureDetector(

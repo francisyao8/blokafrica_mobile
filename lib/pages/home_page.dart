@@ -121,8 +121,6 @@ class _HomePageState extends State<HomePage>
           ),
         ),
         actions: [
-          _buildAppBarIcon(Icons.settings),
-          const SizedBox(width: 10),
           _buildAppBarIcon(Icons.notifications),
           const SizedBox(width: 16),
         ],
